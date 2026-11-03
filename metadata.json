@@ -1,0 +1,6 @@
+{
+  "name": "MikMik Sponsor",
+  "description": "Self-service advertising platform for Iraq and Kurdistan, designed for TikTok In-Feed Ads campaign planning and official Marketing API integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

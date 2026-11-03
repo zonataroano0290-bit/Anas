@@ -1,0 +1,487 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Advertiser user account profile for MikMik Sponsor",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user ID matching auth.uid",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the advertiser",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the advertiser",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number in Iraq or international format",
+          "maxLength": 30
+        },
+        "role": {
+          "type": "string",
+          "description": "Account role: individual or business. Admin is assigned server-side only",
+          "enum": ["individual", "business", "admin"]
+        },
+        "language": {
+          "type": "string",
+          "description": "Interface language",
+          "enum": ["ckb", "ar", "en"]
+        },
+        "businessProfile": {
+          "type": "object",
+          "description": "Embedded business profile details for business accounts"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "email", "name", "role", "language"]
+    },
+    "BusinessProfile": {
+      "title": "BusinessProfile",
+      "description": "Dedicated corporate profile record for registered commercial entities",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Business profile ID",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "User UID of the business owner",
+          "maxLength": 128
+        },
+        "businessName": {
+          "type": "string",
+          "description": "Trade name of the business or store",
+          "maxLength": 120
+        },
+        "businessCategory": {
+          "type": "string",
+          "description": "Industry sector or commercial category",
+          "maxLength": 80
+        },
+        "country": {
+          "type": "string",
+          "description": "Country of registration (e.g. Iraq)",
+          "maxLength": 50
+        },
+        "region": {
+          "type": "string",
+          "description": "Region or governorate (e.g. Kurdistan, Baghdad)",
+          "maxLength": 50
+        },
+        "city": {
+          "type": "string",
+          "description": "City of operation (e.g. Erbil, Sulaymaniyah)",
+          "maxLength": 50
+        },
+        "contactEmail": {
+          "type": "string",
+          "description": "Corporate contact email",
+          "maxLength": 150
+        },
+        "contactPhone": {
+          "type": "string",
+          "description": "Corporate contact telephone",
+          "maxLength": 30
+        },
+        "website": {
+          "type": "string",
+          "description": "Optional business website URL",
+          "maxLength": 200
+        },
+        "commercialRegistrationNumber": {
+          "type": "string",
+          "description": "Official chamber of commerce registration number",
+          "maxLength": 80
+        },
+        "taxIdentificationNumber": {
+          "type": "string",
+          "description": "Tax authority identification number",
+          "maxLength": 80
+        },
+        "verificationStatus": {
+          "type": "string",
+          "description": "Official verification state",
+          "enum": ["unverified", "pending_verification", "verified", "rejected"]
+        },
+        "verificationNotes": {
+          "type": "string",
+          "description": "Review notes provided by platform administrator",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "ownerId", "businessName", "businessCategory", "country", "verificationStatus"]
+    },
+    "AdCampaign": {
+      "title": "AdCampaign",
+      "description": "Self-service advertising campaign targeting Iraq and Kurdistan via TikTok Marketing API v1.3 specs",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique campaign ID",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "User UID who owns this campaign",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Campaign title",
+          "maxLength": 120
+        },
+        "objective": {
+          "type": "string",
+          "description": "Advertising objective",
+          "enum": ["TRAFFIC", "CONVERSIONS", "VIDEO_VIEWS", "REACH", "LEAD_GENERATION"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Campaign lifecycle status",
+          "enum": [
+            "draft",
+            "awaiting_configuration",
+            "pending_review",
+            "pending_approval",
+            "ready_to_submit",
+            "submitted_to_tiktok",
+            "active",
+            "paused",
+            "rejected",
+            "completed",
+            "failed"
+          ]
+        },
+        "statusNote": {
+          "type": "string",
+          "description": "Explanation of current status or audit message",
+          "maxLength": 300
+        },
+        "advertiserType": {
+          "type": "string",
+          "description": "Account category",
+          "enum": ["individual", "business"]
+        },
+        "budget": {
+          "type": "object",
+          "description": "Budget configuration with USD and IQD conversion"
+        },
+        "schedule": {
+          "type": "object",
+          "description": "Flight dates and schedule type"
+        },
+        "audience": {
+          "type": "object",
+          "description": "Targeting demographics and Iraqi governorate codes"
+        },
+        "creative": {
+          "type": "object",
+          "description": "Ad creative metadata conforming to TikTok In-Feed ad specs"
+        },
+        "tiktokIntegration": {
+          "type": "object",
+          "description": "Provider synchronization and campaign IDs"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "ownerId", "name", "objective", "status", "budget", "schedule", "audience", "creative"]
+    },
+    "AdCreative": {
+      "title": "AdCreative",
+      "description": "Ad creative video metadata conforming to TikTok 9:16 In-Feed ad specifications",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique creative ID",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "User UID who owns this creative",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Creative title",
+          "maxLength": 120
+        },
+        "videoFileName": {
+          "type": "string",
+          "description": "File name of uploaded video asset",
+          "maxLength": 200
+        },
+        "videoFileUrl": {
+          "type": "string",
+          "description": "Video playback or storage URL",
+          "maxLength": 500
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "Cloud storage path reference",
+          "maxLength": 300
+        },
+        "fileSizeBytes": {
+          "type": "number",
+          "description": "File size in bytes (max 500MB)"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Video duration in seconds (5 to 60 seconds)"
+        },
+        "aspectRatio": {
+          "type": "string",
+          "description": "Aspect ratio",
+          "enum": ["9:16", "1:1", "16:9"]
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Resolution string e.g. 1080x1920",
+          "maxLength": 30
+        },
+        "adText": {
+          "type": "string",
+          "description": "Ad caption text (1-100 characters for In-Feed Ads)",
+          "maxLength": 100
+        },
+        "callToAction": {
+          "type": "string",
+          "description": "TikTok CTA button",
+          "enum": ["LEARN_MORE", "SHOP_NOW", "SIGN_UP", "CONTACT_US", "DOWNLOAD", "ORDER_NOW"]
+        },
+        "destinationUrl": {
+          "type": "string",
+          "description": "Click-through destination landing page",
+          "maxLength": 500
+        },
+        "displayAccountName": {
+          "type": "string",
+          "description": "Brand name displayed on ad",
+          "maxLength": 60
+        },
+        "uploadStatus": {
+          "type": "string",
+          "description": "Storage upload progress",
+          "enum": ["pending", "uploaded", "failed"]
+        },
+        "reviewStatus": {
+          "type": "string",
+          "description": "Content moderation status",
+          "enum": ["draft", "pending_review", "approved", "rejected"]
+        },
+        "fileType": {
+          "type": "string",
+          "description": "MIME type (video/mp4 or video/quicktime)",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "ownerId", "name", "videoFileName", "aspectRatio", "adText", "callToAction", "destinationUrl"]
+    },
+    "CampaignEvent": {
+      "title": "CampaignEvent",
+      "description": "Immutable audit event recording campaign status transitions, sync logs, and provider interactions",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique event ID",
+          "maxLength": 128
+        },
+        "campaignId": {
+          "type": "string",
+          "description": "Associated campaign ID",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "User UID who owns the campaign",
+          "maxLength": 128
+        },
+        "eventType": {
+          "type": "string",
+          "description": "Categorized event type",
+          "enum": [
+            "created",
+            "status_changed",
+            "budget_updated",
+            "creative_bound",
+            "submitted_to_provider",
+            "provider_sync",
+            "error_logged"
+          ]
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp when the event occurred"
+        },
+        "source": {
+          "type": "string",
+          "description": "Trusted source initiating the event",
+          "enum": ["client", "server_worker", "tiktok_webhook", "admin"]
+        },
+        "providerReference": {
+          "type": "string",
+          "description": "Optional external provider reference e.g. TikTok request ID",
+          "maxLength": 150
+        },
+        "details": {
+          "type": "object",
+          "description": "Structured metadata relevant to the event"
+        }
+      },
+      "required": ["id", "campaignId", "ownerId", "eventType", "timestamp", "source"]
+    },
+    "PaymentRecord": {
+      "title": "PaymentRecord",
+      "description": "Prepared payment intent and transaction audit record for Iraqi payment gateways",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique payment record ID",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "User UID of the payer",
+          "maxLength": 128
+        },
+        "campaignId": {
+          "type": "string",
+          "description": "Optional campaign ID to which funds are designated",
+          "maxLength": 128
+        },
+        "amount": {
+          "type": "number",
+          "description": "Transaction amount"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code",
+          "enum": ["IQD", "USD"]
+        },
+        "gateway": {
+          "type": "string",
+          "description": "Selected payment gateway provider",
+          "enum": ["fastpay", "zaincash", "fib", "card"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Payment transaction status",
+          "enum": ["draft_request", "pending_payment", "completed", "failed", "refunded"]
+        },
+        "providerTxId": {
+          "type": "string",
+          "description": "Gateway reference or transaction ID returned by provider",
+          "maxLength": 150
+        },
+        "merchantNote": {
+          "type": "string",
+          "description": "Merchant reconciliation note",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "ownerId", "amount", "currency", "gateway", "status"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Platform administrator authorization entry",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Verified administrator email"
+        },
+        "role": {
+          "type": "string",
+          "description": "Administrator authority level",
+          "enum": ["platform_admin", "super_admin"]
+        },
+        "addedAt": {
+          "type": "string",
+          "description": "ISO timestamp when admin was provisioned"
+        }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profiles. Access restricted to the owner and platform administrators."
+    },
+    "/businesses/{businessId}": {
+      "schema": "BusinessProfile",
+      "description": "Stores verified commercial business profiles. Owners manage their business details; verification status is administrative."
+    },
+    "/campaigns/{campaignId}": {
+      "schema": "AdCampaign",
+      "description": "Stores advertising campaigns. Owners create and edit drafts; transitions to active or submitted states require authorized backend or administrative action."
+    },
+    "/creatives/{creativeId}": {
+      "schema": "AdCreative",
+      "description": "Stores video ad creative metadata. Access restricted to the owner and administrators."
+    },
+    "/campaigns/{campaignId}/events/{eventId}": {
+      "schema": "CampaignEvent",
+      "description": "Stores immutable audit events for campaign lifecycle progression."
+    },
+    "/payments/{paymentId}": {
+      "schema": "PaymentRecord",
+      "description": "Stores payment intent requests and transaction records. Completion is controlled server-side."
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Stores verified administrator UIDs. Writable only via trusted server environment."
+    }
+  }
+}

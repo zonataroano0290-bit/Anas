@@ -1,0 +1,228 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Default Deny Safety Net (Pillar 1 & 4)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Standard hard primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Server-side & bootstrapped admin check (email verified)
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email == 'chirayshaw@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    // Entity validation helpers
+    function isValidUserProfile(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 100 && data.name.size() >= 2 &&
+             data.email is string && data.email.size() <= 150 &&
+             data.role is string && (data.role in ['individual', 'business', 'admin']) &&
+             data.language is string && (data.language in ['ckb', 'ar', 'en']);
+    }
+
+    function isValidBusinessProfile(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.ownerId is string && data.ownerId.size() <= 128 &&
+             data.businessName is string && data.businessName.size() <= 120 && data.businessName.size() >= 2 &&
+             data.businessCategory is string && data.businessCategory.size() <= 80 &&
+             data.country is string && data.country.size() <= 50 &&
+             data.verificationStatus is string && (data.verificationStatus in ['unverified', 'pending_verification', 'verified', 'rejected']);
+    }
+
+    function isValidAdCampaign(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.ownerId is string && data.ownerId.size() <= 128 &&
+             data.name is string && data.name.size() <= 120 && data.name.size() >= 2 &&
+             data.objective is string && (data.objective in ['TRAFFIC', 'CONVERSIONS', 'VIDEO_VIEWS', 'REACH', 'LEAD_GENERATION']) &&
+             data.status is string && (data.status in [
+               'draft', 'awaiting_configuration', 'pending_review', 'pending_approval',
+               'ready_to_submit', 'submitted_to_tiktok', 'active', 'paused', 'rejected', 'completed', 'failed'
+             ]) &&
+             data.advertiserType is string && (data.advertiserType in ['individual', 'business']);
+    }
+
+    function isValidAdCreative(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.ownerId is string && data.ownerId.size() <= 128 &&
+             data.name is string && data.name.size() <= 120 &&
+             data.videoFileName is string && data.videoFileName.size() <= 200 &&
+             data.adText is string && data.adText.size() <= 100 &&
+             data.destinationUrl is string && data.destinationUrl.size() <= 500;
+    }
+
+    function isValidCampaignEvent(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.campaignId is string && data.campaignId.size() <= 128 &&
+             data.ownerId is string && data.ownerId.size() <= 128 &&
+             data.eventType is string && (data.eventType in [
+               'created', 'status_changed', 'budget_updated', 'creative_bound',
+               'submitted_to_provider', 'provider_sync', 'error_logged'
+             ]) &&
+             data.source is string && (data.source in ['client', 'server_worker', 'tiktok_webhook', 'admin']);
+    }
+
+    function isValidPaymentRecord(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.ownerId is string && data.ownerId.size() <= 128 &&
+             data.amount is number && data.amount > 0 &&
+             data.currency is string && (data.currency in ['IQD', 'USD']) &&
+             data.gateway is string && (data.gateway in ['fastpay', 'zaincash', 'fib', 'card']) &&
+             data.status is string && (data.status in ['draft_request', 'pending_payment', 'completed', 'failed', 'refunded']);
+    }
+
+    // 2. Users Collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       isValidUserProfile(request.resource.data) &&
+                       request.resource.data.id == request.auth.uid &&
+                       (request.resource.data.role in ['individual', 'business']);
+      allow update: if isValidId(userId) &&
+                       isValidUserProfile(request.resource.data) &&
+                       (
+                         isAdmin() ||
+                         (
+                           isOwner(userId) &&
+                           request.resource.data.role == resource.data.role &&
+                           request.resource.data.id == resource.data.id &&
+                           request.resource.data.email == resource.data.email &&
+                           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                             'name', 'phone', 'language', 'businessProfile', 'updatedAt'
+                           ])
+                         )
+                       );
+      allow delete: if isValidId(userId) && (isOwner(userId) || isAdmin());
+    }
+
+    // 3. Business Profiles Collection
+    match /businesses/{businessId} {
+      allow get: if isValidId(businessId) && (isOwner(resource.data.ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isValidId(businessId) &&
+                       isValidBusinessProfile(request.resource.data) &&
+                       isOwner(request.resource.data.ownerId) &&
+                       request.resource.data.verificationStatus in ['unverified', 'pending_verification'];
+      allow update: if isValidId(businessId) &&
+                       isValidBusinessProfile(request.resource.data) &&
+                       (
+                         isAdmin() ||
+                         (
+                           isOwner(resource.data.ownerId) &&
+                           request.resource.data.ownerId == resource.data.ownerId &&
+                           request.resource.data.id == resource.data.id &&
+                           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus', 'ownerId', 'id', 'createdAt'])
+                         )
+                       );
+      allow delete: if isValidId(businessId) && (isOwner(resource.data.ownerId) || isAdmin());
+    }
+
+    // 4. Ad Campaigns Collection
+    match /campaigns/{campaignId} {
+      allow get: if isValidId(campaignId) && (isOwner(resource.data.ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      
+      // Critical Constraint: Client cannot create active or submitted campaigns directly
+      allow create: if isValidId(campaignId) &&
+                       isValidAdCampaign(request.resource.data) &&
+                       isOwner(request.resource.data.ownerId) &&
+                       (request.resource.data.status in ['draft', 'ready_to_submit', 'awaiting_configuration']);
+      
+      // Critical Constraint: Client cannot mark campaign as active or submitted_to_tiktok directly.
+      // Must be performed via trusted server-side authorization or admin audit.
+      allow update: if isValidId(campaignId) &&
+                       isValidAdCampaign(request.resource.data) &&
+                       (
+                         isAdmin() ||
+                         (
+                           isOwner(resource.data.ownerId) &&
+                           request.resource.data.ownerId == resource.data.ownerId &&
+                           request.resource.data.id == resource.data.id &&
+                           !(request.resource.data.status in ['active', 'submitted_to_tiktok']) &&
+                           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                             'name', 'objective', 'status', 'statusNote', 'budget',
+                             'schedule', 'audience', 'creative', 'updatedAt'
+                           ])
+                         )
+                       );
+      allow delete: if isValidId(campaignId) && (
+                       (isOwner(resource.data.ownerId) && resource.data.status in ['draft', 'ready_to_submit']) ||
+                       isAdmin()
+                     );
+
+      // 4b. Campaign Events Subcollection (Immutable Audit Stream)
+      match /events/{eventId} {
+        allow get, list: if isSignedIn() && (
+          get(/databases/$(database)/documents/campaigns/$(campaignId)).data.ownerId == request.auth.uid ||
+          isAdmin()
+        );
+        allow create: if isValidId(eventId) &&
+                         isValidCampaignEvent(request.resource.data) &&
+                         request.resource.data.campaignId == campaignId &&
+                         (
+                           get(/databases/$(database)/documents/campaigns/$(campaignId)).data.ownerId == request.auth.uid ||
+                           isAdmin()
+                         );
+        allow update, delete: if false; // Immutable audit log
+      }
+    }
+
+    // 5. Ad Creatives Collection
+    match /creatives/{creativeId} {
+      allow get: if isValidId(creativeId) && (isOwner(resource.data.ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isValidId(creativeId) &&
+                       isValidAdCreative(request.resource.data) &&
+                       isOwner(request.resource.data.ownerId);
+      allow update: if isValidId(creativeId) &&
+                       isValidAdCreative(request.resource.data) &&
+                       (
+                         isAdmin() ||
+                         (
+                           isOwner(resource.data.ownerId) &&
+                           request.resource.data.ownerId == resource.data.ownerId &&
+                           request.resource.data.id == resource.data.id &&
+                           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['reviewStatus', 'ownerId', 'id', 'createdAt'])
+                         )
+                       );
+      allow delete: if isValidId(creativeId) && (isOwner(resource.data.ownerId) || isAdmin());
+    }
+
+    // 6. Payments Collection
+    match /payments/{paymentId} {
+      allow get: if isValidId(paymentId) && (isOwner(resource.data.ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      // Clients can only submit draft or pending payment requests
+      allow create: if isValidId(paymentId) &&
+                       isValidPaymentRecord(request.resource.data) &&
+                       isOwner(request.resource.data.ownerId) &&
+                       (request.resource.data.status in ['draft_request', 'pending_payment']);
+      // Clients CANNOT mark payment as completed or refunded! Trusted server or admin only.
+      allow update: if isAdmin();
+      allow delete: if false; // Immutable transaction ledger
+    }
+
+    // 7. Admins Collection
+    match /admins/{adminId} {
+      allow get, list: if isAdmin();
+      allow write: if false; // Provisioned exclusively via secure server backend
+    }
+  }
+}
